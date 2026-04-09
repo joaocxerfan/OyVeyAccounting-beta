@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Accounts — OyVey Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Accounts</h1>
+    <a href="{{ url_for('new_account') }}" class="btn btn-primary">+ New Account</a>
+</div>
+
+{% if accounts %}
+<div class="accounts-grid">
+    {% for account in accounts %}
+    <div class="account-card">
+        <div class="account-header">
+            <h3>{{ account.name }}</h3>
+            <span class="badge">{{ account.type|capitalize }}</span>
+        </div>
+        {% if account.description %}
+        <p class="account-description">{{ account.description }}</p>
+        {% endif %}
+        <div class="account-balance {% if account.balance >= 0 %}positive{% else %}negative{% endif %}">
+            Balance: ${{ "%.2f"|format(account.balance) }}
+        </div>
+        <div class="account-actions">
+            <a href="{{ url_for('edit_account', account_id=account.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+            <form method="POST" action="{{ url_for('delete_account', account_id=account.id) }}" style="display:inline" onsubmit="return confirm('Delete this account?')">
+                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No accounts yet. <a href="{{ url_for('new_account') }}">Create your first account</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

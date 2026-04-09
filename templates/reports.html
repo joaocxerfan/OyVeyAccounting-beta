@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Reports — OyVey Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Reports</h1>
+</div>
+
+<div class="section">
+    <h2>Monthly Summary</h2>
+    {% if monthly_summary %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>Income</th>
+                <th>Expenses</th>
+                <th>Net</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for month, summary in monthly_summary %}
+            <tr>
+                <td>{{ month }}</td>
+                <td class="amount income">+${{ "%.2f"|format(summary.income) }}</td>
+                <td class="amount expense">-${{ "%.2f"|format(summary.expenses) }}</td>
+                <td class="amount {% if summary.income - summary.expenses >= 0 %}income{% else %}expense{% endif %}">
+                    ${{ "%.2f"|format(summary.income - summary.expenses) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No transaction data available.</p>
+    {% endif %}
+</div>
+
+<div class="section">
+    <h2>By Category</h2>
+    {% if category_summary %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Income</th>
+                <th>Expenses</th>
+                <th>Net</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category, summary in category_summary %}
+            <tr>
+                <td><span class="badge">{{ category }}</span></td>
+                <td class="amount income">+${{ "%.2f"|format(summary.income) }}</td>
+                <td class="amount expense">-${{ "%.2f"|format(summary.expenses) }}</td>
+                <td class="amount {% if summary.income - summary.expenses >= 0 %}income{% else %}expense{% endif %}">
+                    ${{ "%.2f"|format(summary.income - summary.expenses) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No category data available.</p>
+    {% endif %}
+</div>
+{% endblock %}

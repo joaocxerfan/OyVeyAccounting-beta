@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Transactions — OyVey Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Transactions</h1>
+    <a href="{{ url_for('new_transaction') }}" class="btn btn-primary">+ New Transaction</a>
+</div>
+
+{% if transactions %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.date }}</td>
+            <td>{{ t.description }}</td>
+            <td><span class="badge">{{ t.category or "—" }}</span></td>
+            <td><span class="badge badge-{{ t.type }}">{{ t.type|capitalize }}</span></td>
+            <td class="amount {{ t.type }}">
+                {% if t.type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(t.amount) }}
+            </td>
+            <td class="actions">
+                <a href="{{ url_for('edit_transaction', transaction_id=t.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                <form method="POST" action="{{ url_for('delete_transaction', transaction_id=t.id) }}" style="display:inline" onsubmit="return confirm('Delete this transaction?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No transactions yet. <a href="{{ url_for('new_transaction') }}">Add your first transaction</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,135 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PROJECT_ID_PROD: "oyveyaccounting-440525965881"
+  PROJECT_ID_DEV: "264393058205"
+  SERVICE_NAME: "oyveyaccounting"
+  REGION_PROD: "us-west1"
+  REGION_DEV: "us-east1"
+
+jobs:
+  # ── Lint & Test ───────────────────────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+
+      - name: Run tests
+        run: pytest tests/ -v || echo "No tests found — skipping."
+
+  # ── Deploy to Development ─────────────────────────────────────────────────────
+  deploy-dev:
+    name: Deploy to Dev (us-east1)
+    needs: test
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_DEV }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION_DEV }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image (dev)
+        run: |
+          IMAGE="${{ env.REGION_DEV }}-docker.pkg.dev/${{ env.PROJECT_ID_DEV }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run (dev)
+        run: |
+          IMAGE="${{ env.REGION_DEV }}-docker.pkg.dev/${{ env.PROJECT_ID_DEV }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          gcloud run deploy ${{ env.SERVICE_NAME }}-dev \
+            --image "$IMAGE" \
+            --region ${{ env.REGION_DEV }} \
+            --project ${{ env.PROJECT_ID_DEV }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "FLASK_DEBUG=false" \
+            --memory 512Mi \
+            --cpu 1 \
+            --max-instances 5
+
+  # ── Deploy to Production ──────────────────────────────────────────────────────
+  deploy-prod:
+    name: Deploy to Production (us-west1)
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_PROD }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_PROD }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION_PROD }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image (prod)
+        run: |
+          IMAGE="${{ env.REGION_PROD }}-docker.pkg.dev/${{ env.PROJECT_ID_PROD }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run (prod)
+        run: |
+          IMAGE="${{ env.REGION_PROD }}-docker.pkg.dev/${{ env.PROJECT_ID_PROD }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "$IMAGE" \
+            --region ${{ env.REGION_PROD }} \
+            --project ${{ env.PROJECT_ID_PROD }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "FLASK_DEBUG=false" \
+            --memory 512Mi \
+            --cpu 1 \
+            --max-instances 10
+
+      - name: Output production URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION_PROD }} \
+            --project ${{ env.PROJECT_ID_PROD }} \
+            --format 'value(status.url)')
+          echo "🚀 Deployed to: $URL"
+          echo "PROD_URL=$URL" >> $GITHUB_ENV

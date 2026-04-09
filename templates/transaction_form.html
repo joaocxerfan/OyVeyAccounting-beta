@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{% if transaction %}Edit Transaction{% else %}New Transaction{% endif %} — OyVey Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{% if transaction %}Edit Transaction{% else %}New Transaction{% endif %}</h1>
+    <a href="{{ url_for('transactions') }}" class="btn btn-secondary">← Back</a>
+</div>
+
+<div class="form-container">
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" class="form-control"
+                   value="{{ transaction.date if transaction else today }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description" class="form-control"
+                   value="{{ transaction.description if transaction else '' }}"
+                   placeholder="e.g. Office supplies" required>
+        </div>
+
+        <div class="form-group">
+            <label for="amount">Amount ($)</label>
+            <input type="number" id="amount" name="amount" class="form-control"
+                   value="{{ transaction.amount if transaction else '' }}"
+                   step="0.01" min="0.01" placeholder="0.00" required>
+        </div>
+
+        <div class="form-group">
+            <label for="type">Type</label>
+            <select id="type" name="type" class="form-control" required>
+                <option value="expense" {% if transaction and transaction.type == 'expense' %}selected{% endif %}>Expense</option>
+                <option value="income" {% if transaction and transaction.type == 'income' %}selected{% endif %}>Income</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category</label>
+            <input type="text" id="category" name="category" class="form-control"
+                   value="{{ transaction.category if transaction else '' }}"
+                   list="category-suggestions"
+                   placeholder="e.g. Utilities, Payroll, Sales">
+            <datalist id="category-suggestions">
+                <option value="Sales">
+                <option value="Payroll">
+                <option value="Utilities">
+                <option value="Rent">
+                <option value="Software">
+                <option value="Marketing">
+                <option value="Travel">
+                <option value="Office Supplies">
+                <option value="Professional Services">
+                <option value="Other">
+            </datalist>
+        </div>
+
+        {% if accounts %}
+        <div class="form-group">
+            <label for="account_id">Account</label>
+            <select id="account_id" name="account_id" class="form-control">
+                <option value="">— No Account —</option>
+                {% for account in accounts %}
+                <option value="{{ account.id }}"
+                    {% if transaction and transaction.account_id == account.id %}selected{% endif %}>
+                    {{ account.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if transaction %}Save Changes{% else %}Add Transaction{% endif %}
+            </button>
+            <a href="{{ url_for('transactions') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
