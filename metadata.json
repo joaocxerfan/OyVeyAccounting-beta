@@ -1,0 +1,5 @@
+{
+  "name": "OyVeyAccounting",
+  "description": "Controle financeiro inteligente com Samuel, seu contador pessoal - Registre transações, analise recibos e receba consultoria financeira.",
+  "requestFramePermissions": ["camera", "microphone"]
+}

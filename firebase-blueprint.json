@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": ["string", "null"] },
+        "photoURL": { "type": ["string", "null"] },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "darkMode": { "type": "boolean" },
+            "spendingGoal": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Transaction": {
+      "title": "Financial Transaction",
+      "description": "A record of an income or expense",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "data": { "type": "string", "format": "date" },
+        "tipo": { "type": "string", "enum": ["Entrada", "Saída"] },
+        "subtipo": { "type": ["string", "null"], "enum": ["Gasto", "Despesa", null] },
+        "valor": { "type": "number" },
+        "categoria": { "type": "string" },
+        "descricao": { "type": ["string", "null"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "data", "tipo", "valor", "categoria"]
+    },
+    "Category": {
+      "title": "Transaction Category",
+      "description": "A custom category for transactions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["Entrada", "Saída"] },
+        "icon": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "tipo"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User financial transactions"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "User custom categories"
+    }
+  }
+}
